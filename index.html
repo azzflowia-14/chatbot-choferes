@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Registro de Transferencias</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f0f2f5;
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: 420px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    .header {
+      text-align: center;
+      padding: 30px 0 20px;
+    }
+
+    .header h1 {
+      font-size: 22px;
+      color: #1a1a2e;
+      margin-bottom: 4px;
+    }
+
+    .header p {
+      font-size: 14px;
+      color: #666;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 24px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+
+    .form-group {
+      margin-bottom: 18px;
+    }
+
+    label {
+      display: block;
+      font-size: 14px;
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 6px;
+    }
+
+    input[type="text"],
+    input[type="password"],
+    input[type="number"] {
+      width: 100%;
+      padding: 12px 14px;
+      border: 2px solid #e0e0e0;
+      border-radius: 8px;
+      font-size: 16px;
+      transition: border-color 0.2s;
+      -webkit-appearance: none;
+    }
+
+    input:focus {
+      outline: none;
+      border-color: #4361ee;
+    }
+
+    .foto-upload {
+      position: relative;
+      border: 2px dashed #ccc;
+      border-radius: 8px;
+      padding: 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      background: #fafafa;
+    }
+
+    .foto-upload.has-foto {
+      border-color: #4361ee;
+      background: #f0f4ff;
+    }
+
+    .foto-upload input[type="file"] {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      opacity: 0;
+      cursor: pointer;
+    }
+
+    .foto-upload .icon {
+      font-size: 32px;
+      margin-bottom: 8px;
+    }
+
+    .foto-upload .text {
+      font-size: 14px;
+      color: #666;
+    }
+
+    .foto-upload .filename {
+      font-size: 13px;
+      color: #4361ee;
+      font-weight: 600;
+      margin-top: 4px;
+      word-break: break-all;
+    }
+
+    .preview-img {
+      max-width: 100%;
+      max-height: 200px;
+      border-radius: 8px;
+      margin-top: 10px;
+    }
+
+    .btn {
+      width: 100%;
+      padding: 14px;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-primary {
+      background: #4361ee;
+      color: #fff;
+    }
+
+    .btn-primary:hover {
+      background: #3a56d4;
+    }
+
+    .btn-primary:disabled {
+      background: #a0b0e8;
+      cursor: not-allowed;
+    }
+
+    .btn-logout {
+      background: none;
+      border: none;
+      color: #999;
+      font-size: 13px;
+      cursor: pointer;
+      padding: 8px;
+      margin-top: 12px;
+      width: 100%;
+      text-align: center;
+    }
+
+    .alert {
+      padding: 12px 16px;
+      border-radius: 8px;
+      margin-bottom: 16px;
+      font-size: 14px;
+    }
+
+    .alert-success {
+      background: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+    }
+
+    .alert-error {
+      background: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+    }
+
+    .spinner {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 3px solid rgba(255,255,255,0.3);
+      border-radius: 50%;
+      border-top-color: #fff;
+      animation: spin 0.8s linear infinite;
+      vertical-align: middle;
+      margin-right: 8px;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .hidden { display: none !important; }
+
+    .welcome {
+      font-size: 15px;
+      color: #333;
+      margin-bottom: 20px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid #eee;
+    }
+
+    .welcome strong {
+      color: #4361ee;
+    }
+
+    .historial-btn {
+      background: none;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 10px;
+      width: 100%;
+      text-align: center;
+      color: #666;
+      font-size: 13px;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+
+    .monto-prefix {
+      position: relative;
+    }
+
+    .monto-prefix span {
+      position: absolute;
+      left: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 16px;
+      color: #666;
+      pointer-events: none;
+    }
+
+    .monto-prefix input {
+      padding-left: 28px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <div class="header">
+    <h1>Registro de Transferencias</h1>
+    <p>Cargá el comprobante de transferencia</p>
+  </div>
+
+  <!-- ===== LOGIN ===== -->
+  <div id="loginSection" class="card">
+    <div id="loginAlert"></div>
+
+    <div class="form-group">
+      <label>Usuario</label>
+      <input type="text" id="loginUser" placeholder="Tu usuario" autocomplete="username" autocapitalize="none">
+    </div>
+
+    <div class="form-group">
+      <label>Contraseña</label>
+      <input type="password" id="loginPass" placeholder="Tu contraseña" autocomplete="current-password">
+    </div>
+
+    <button class="btn btn-primary" id="btnLogin" onclick="login()">
+      Ingresar
+    </button>
+  </div>
+
+  <!-- ===== FORMULARIO ===== -->
+  <div id="formSection" class="card hidden">
+    <div class="welcome">
+      Hola, <strong id="choferNombre"></strong>
+    </div>
+
+    <div id="formAlert"></div>
+
+    <div class="form-group">
+      <label>Código de Cliente</label>
+      <input type="text" id="codCliente" placeholder="Ej: 1234" autocapitalize="characters">
+    </div>
+
+    <div class="form-group">
+      <label>Monto de la transferencia</label>
+      <div class="monto-prefix">
+        <span>$</span>
+        <input type="number" id="monto" placeholder="0.00" inputmode="decimal" step="0.01" min="0">
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>Foto del comprobante</label>
+      <div class="foto-upload" id="fotoUpload">
+        <input type="file" id="fotoInput" accept="image/*" capture="environment" onchange="handleFoto(this)">
+        <div id="fotoPlaceholder">
+          <div class="icon">&#128247;</div>
+          <div class="text">Tocá para sacar foto o elegir imagen</div>
+        </div>
+        <div id="fotoPreview" class="hidden">
+          <img id="previewImg" class="preview-img" alt="Preview">
+          <div class="filename" id="fotoName"></div>
+        </div>
+      </div>
+    </div>
+
+    <button class="btn btn-primary" id="btnSubmit" onclick="submit()">
+      Registrar Comprobante
+    </button>
+
+    <button class="btn-logout" onclick="logout()">
+      Cerrar sesión
+    </button>
+  </div>
+</div>
+
+<script>
+  // =============================================
+  // CONFIGURACIÓN - Pegá acá la URL de tu Apps Script
+  // =============================================
+  var API_URL = 'https://script.google.com/macros/s/AKfycbxvGpH1LfhodOeQu5-UfgkdDmHgc0-mHe24-4Co-W6KmtgdovirIwuCZrV2JilwJds/exec';
+  // Ejemplo: 'https://script.google.com/macros/s/AKfycbx.../exec'
+
+  // =============================================
+  // Estado
+  // =============================================
+  var session = JSON.parse(localStorage.getItem('chofer_session') || 'null');
+  var fotoData = null;
+  var fotoTipo = '';
+  var fotoNombre = '';
+
+  // Si hay sesión guardada, mostrar formulario
+  if (session) {
+    showForm(session.nombre);
+  }
+
+  // =============================================
+  // Login
+  // =============================================
+  function login() {
+    var usuario = document.getElementById('loginUser').value.trim();
+    var password = document.getElementById('loginPass').value.trim();
+
+    if (!usuario || !password) {
+      showAlert('loginAlert', 'Completá usuario y contraseña', 'error');
+      return;
+    }
+
+    var btn = document.getElementById('btnLogin');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span>Ingresando...';
+
+    fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({ action: 'login', usuario: usuario, password: password })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      btn.disabled = false;
+      btn.textContent = 'Ingresar';
+
+      if (data.success) {
+        session = { usuario: usuario, password: password, nombre: data.nombre };
+        localStorage.setItem('chofer_session', JSON.stringify(session));
+        showForm(data.nombre);
+      } else {
+        showAlert('loginAlert', data.error || 'Error al ingresar', 'error');
+      }
+    })
+    .catch(function(err) {
+      btn.disabled = false;
+      btn.textContent = 'Ingresar';
+      showAlert('loginAlert', 'Error de conexión. Intentá de nuevo.', 'error');
+    });
+  }
+
+  // =============================================
+  // Foto
+  // =============================================
+  function handleFoto(input) {
+    var file = input.files[0];
+    if (!file) return;
+
+    fotoTipo = file.type;
+    fotoNombre = file.name;
+
+    var reader = new FileReader();
+    reader.onload = function(e) {
+      fotoData = e.target.result;
+      document.getElementById('fotoPlaceholder').classList.add('hidden');
+      document.getElementById('fotoPreview').classList.remove('hidden');
+      document.getElementById('previewImg').src = fotoData;
+      document.getElementById('fotoName').textContent = fotoNombre;
+      document.getElementById('fotoUpload').classList.add('has-foto');
+    };
+    reader.readAsDataURL(file);
+  }
+
+  // =============================================
+  // Submit
+  // =============================================
+  function submit() {
+    var codCliente = document.getElementById('codCliente').value.trim();
+    var monto = document.getElementById('monto').value.trim();
+
+    if (!codCliente) {
+      showAlert('formAlert', 'Ingresá el código de cliente', 'error');
+      return;
+    }
+    if (!monto || parseFloat(monto) <= 0) {
+      showAlert('formAlert', 'Ingresá un monto válido', 'error');
+      return;
+    }
+    if (!fotoData) {
+      showAlert('formAlert', 'Sacale una foto al comprobante', 'error');
+      return;
+    }
+
+    var btn = document.getElementById('btnSubmit');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span>Enviando...';
+
+    var payload = {
+      action: 'submit',
+      usuario: session.usuario,
+      password: session.password,
+      chofer: session.nombre,
+      codCliente: codCliente,
+      monto: monto,
+      fotoBase64: fotoData,
+      fotoTipo: fotoTipo,
+      fotoNombre: fotoNombre
+    };
+
+    fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify(payload)
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      btn.disabled = false;
+      btn.textContent = 'Registrar Comprobante';
+
+      if (data.success) {
+        showAlert('formAlert', 'Comprobante registrado correctamente', 'success');
+        resetForm();
+      } else {
+        showAlert('formAlert', data.error || 'Error al registrar', 'error');
+      }
+    })
+    .catch(function(err) {
+      btn.disabled = false;
+      btn.textContent = 'Registrar Comprobante';
+      showAlert('formAlert', 'Error de conexión. Intentá de nuevo.', 'error');
+    });
+  }
+
+  // =============================================
+  // Utilidades
+  // =============================================
+  function showForm(nombre) {
+    document.getElementById('loginSection').classList.add('hidden');
+    document.getElementById('formSection').classList.remove('hidden');
+    document.getElementById('choferNombre').textContent = nombre;
+  }
+
+  function logout() {
+    session = null;
+    localStorage.removeItem('chofer_session');
+    document.getElementById('formSection').classList.add('hidden');
+    document.getElementById('loginSection').classList.remove('hidden');
+    document.getElementById('loginUser').value = '';
+    document.getElementById('loginPass').value = '';
+    resetForm();
+  }
+
+  function resetForm() {
+    document.getElementById('codCliente').value = '';
+    document.getElementById('monto').value = '';
+    document.getElementById('fotoInput').value = '';
+    document.getElementById('fotoPlaceholder').classList.remove('hidden');
+    document.getElementById('fotoPreview').classList.add('hidden');
+    document.getElementById('fotoUpload').classList.remove('has-foto');
+    fotoData = null;
+    fotoTipo = '';
+    fotoNombre = '';
+  }
+
+  function showAlert(elementId, message, type) {
+    var el = document.getElementById(elementId);
+    el.className = 'alert alert-' + type;
+    el.textContent = message;
+    el.style.display = 'block';
+
+    if (type === 'success') {
+      setTimeout(function() { el.style.display = 'none'; }, 4000);
+    } else {
+      setTimeout(function() { el.style.display = 'none'; }, 5000);
+    }
+  }
+
+  // Enter key para login
+  document.getElementById('loginPass').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') login();
+  });
+  document.getElementById('loginUser').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') document.getElementById('loginPass').focus();
+  });
+</script>
+
+</body>
+</html>
