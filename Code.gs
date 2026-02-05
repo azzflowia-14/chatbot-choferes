@@ -66,7 +66,8 @@ function handleLogin(data) {
     var nombre = rows[i][0];
     var usuario = rows[i][1].toString().trim().toLowerCase();
     var password = rows[i][2].toString().trim();
-    var tipo = rows[i][3] ? rows[i][3].toString().trim() : 'Chofer';
+    var tipoRaw = rows[i][3] ? rows[i][3].toString().trim().toLowerCase() : 'chofer';
+    var tipo = (tipoRaw === 'auxiliar') ? 'Auxiliar' : 'Chofer';
 
     if (usuario === data.usuario.trim().toLowerCase() && password === data.password.trim()) {
       return jsonResponse({ success: true, nombre: nombre, tipo: tipo });

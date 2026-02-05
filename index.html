@@ -896,7 +896,8 @@
 
   // Inicializar
   if (session) {
-    if (session.tipo === 'Auxiliar') {
+    var esAux = session.tipo && session.tipo.toString().trim().toLowerCase() === 'auxiliar';
+    if (esAux) {
       showAuxHome();
     } else if (rutaActiva) {
       showRutaActiva();
@@ -932,9 +933,11 @@
       btn.textContent = 'Ingresar';
 
       if (data.success) {
-        session = { usuario: usuario, password: password, nombre: data.nombre, tipo: data.tipo || 'Chofer' };
+        var tipoUsuario = (data.tipo || 'Chofer').toString().trim().toLowerCase();
+        var esAuxiliar = tipoUsuario === 'auxiliar';
+        session = { usuario: usuario, password: password, nombre: data.nombre, tipo: esAuxiliar ? 'Auxiliar' : 'Chofer' };
         localStorage.setItem('chofer_session', JSON.stringify(session));
-        if (session.tipo === 'Auxiliar') {
+        if (esAuxiliar) {
           showAuxHome();
         } else {
           showHome();
