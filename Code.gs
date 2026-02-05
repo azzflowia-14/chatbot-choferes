@@ -464,7 +464,7 @@ function handleSubirFotoDescarga(data) {
 
       var file = folder.createFile(blob);
       file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
-      fotoUrl = file.getUrl();
+      fotoUrl = 'https://drive.google.com/uc?export=view&id=' + file.getId();
     } catch (err) {
       return jsonResponse({ success: false, error: 'Error al guardar foto: ' + err.toString() });
     }
@@ -624,7 +624,7 @@ function handleSubmitLegacy(data) {
 
       var file = folder.createFile(blob);
       file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
-      fotoUrl = file.getUrl();
+      fotoUrl = 'https://drive.google.com/uc?export=view&id=' + file.getId();
     } catch (err) {
       return jsonResponse({ success: false, error: 'Error al guardar foto: ' + err.toString() });
     }
