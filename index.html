@@ -677,7 +677,7 @@
 
     <div class="form-group">
       <label>Código de Cliente</label>
-      <input type="text" id="transCodCliente" placeholder="Ej: 1234" autocapitalize="characters" onblur="verificarExceptuado()">
+      <input type="text" id="transCodCliente" placeholder="Ej: 1234" autocapitalize="characters" oninput="onCambioCodigoTrans()">
     </div>
 
     <div class="form-group">
@@ -782,6 +782,8 @@
   var fotoTipo = '';
   var fotoNombre = '';
   var esExceptuado = false;
+  var ultimoCodVerificado = '';
+  var timerExceptuado = null;
 
   // Inicializar
   if (session) {
@@ -877,6 +879,8 @@
       document.getElementById('transMonto').value = '';
       resetFoto();
       resetExceptuado();
+      ultimoCodVerificado = '';
+      if (timerExceptuado) clearTimeout(timerExceptuado);
     } else if (tipo === 'efectivo') {
       document.getElementById('efectivoSection').classList.remove('hidden');
       document.getElementById('efeCodCliente').value = '';
@@ -1204,12 +1208,36 @@
     document.getElementById('exceptuadoInfo').classList.add('hidden');
   }
 
-  function verificarExceptuado() {
+  function onCambioCodigoTrans() {
     var codCliente = document.getElementById('transCodCliente').value.trim();
+
+    // Si está vacío o cambió, resetear inmediatamente
     if (!codCliente) {
       resetExceptuado();
+      ultimoCodVerificado = '';
       return;
     }
+
+    // Si el código cambió, resetear y programar verificación
+    if (codCliente !== ultimoCodVerificado) {
+      resetExceptuado();
+
+      // Cancelar timer anterior
+      if (timerExceptuado) {
+        clearTimeout(timerExceptuado);
+      }
+
+      // Esperar 500ms después de que deje de escribir
+      timerExceptuado = setTimeout(function() {
+        verificarExceptuado(codCliente);
+      }, 500);
+    }
+  }
+
+  function verificarExceptuado(codCliente) {
+    if (!codCliente) return;
+
+    ultimoCodVerificado = codCliente;
 
     fetch(API_URL, {
       method: 'POST',
@@ -1224,6 +1252,10 @@
     })
     .then(function(r) { return r.json(); })
     .then(function(data) {
+      // Verificar que el código no haya cambiado mientras esperábamos
+      var codActual = document.getElementById('transCodCliente').value.trim();
+      if (codActual !== codCliente) return;
+
       if (data.success && data.encontrado) {
         esExceptuado = true;
         document.getElementById('fotoGroup').classList.add('hidden');
