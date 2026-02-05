@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>Registro de Transferencias</title>
+  <title>Control de Rutas - Choferes</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -49,6 +49,7 @@
       border-radius: 12px;
       padding: 24px;
       box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      margin-bottom: 16px;
     }
 
     .form-group {
@@ -65,7 +66,8 @@
 
     input[type="text"],
     input[type="password"],
-    input[type="number"] {
+    input[type="number"],
+    select {
       width: 100%;
       padding: 12px 14px;
       border: 2px solid #e0e0e0;
@@ -73,9 +75,10 @@
       font-size: 16px;
       transition: border-color 0.2s;
       -webkit-appearance: none;
+      background: #fff;
     }
 
-    input:focus {
+    input:focus, select:focus {
       outline: none;
       border-color: #4361ee;
     }
@@ -138,6 +141,11 @@
       font-weight: 600;
       cursor: pointer;
       transition: all 0.2s;
+      margin-bottom: 10px;
+    }
+
+    .btn:last-child {
+      margin-bottom: 0;
     }
 
     .btn-primary {
@@ -154,6 +162,39 @@
       cursor: not-allowed;
     }
 
+    .btn-success {
+      background: #28a745;
+      color: #fff;
+    }
+
+    .btn-success:hover {
+      background: #218838;
+    }
+
+    .btn-warning {
+      background: #ffc107;
+      color: #000;
+    }
+
+    .btn-secondary {
+      background: #6c757d;
+      color: #fff;
+    }
+
+    .btn-secondary:hover {
+      background: #5a6268;
+    }
+
+    .btn-outline {
+      background: #fff;
+      border: 2px solid #4361ee;
+      color: #4361ee;
+    }
+
+    .btn-outline:hover {
+      background: #f0f4ff;
+    }
+
     .btn-logout {
       background: none;
       border: none;
@@ -164,6 +205,19 @@
       margin-top: 12px;
       width: 100%;
       text-align: center;
+    }
+
+    .btn-back {
+      background: none;
+      border: none;
+      color: #666;
+      font-size: 14px;
+      cursor: pointer;
+      padding: 8px 0;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
     }
 
     .alert {
@@ -215,19 +269,6 @@
       color: #4361ee;
     }
 
-    .historial-btn {
-      background: none;
-      border: 1px solid #ddd;
-      border-radius: 8px;
-      padding: 10px;
-      width: 100%;
-      text-align: center;
-      color: #666;
-      font-size: 13px;
-      cursor: pointer;
-      margin-top: 10px;
-    }
-
     .monto-prefix {
       position: relative;
     }
@@ -245,6 +286,231 @@
     .monto-prefix input {
       padding-left: 28px;
     }
+
+    /* Resumen de totales */
+    .resumen {
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 16px;
+      color: #fff;
+    }
+
+    .resumen-title {
+      font-size: 14px;
+      color: #aaa;
+      margin-bottom: 12px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .resumen-total {
+      font-size: 32px;
+      font-weight: 700;
+      margin-bottom: 16px;
+    }
+
+    .resumen-items {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 10px;
+    }
+
+    .resumen-item {
+      background: rgba(255,255,255,0.1);
+      border-radius: 8px;
+      padding: 10px;
+      text-align: center;
+    }
+
+    .resumen-item-label {
+      font-size: 11px;
+      color: #aaa;
+      margin-bottom: 4px;
+    }
+
+    .resumen-item-value {
+      font-size: 16px;
+      font-weight: 600;
+    }
+
+    /* Info de ruta */
+    .ruta-info {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 0;
+      border-bottom: 1px solid #eee;
+      margin-bottom: 16px;
+    }
+
+    .ruta-info-left {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .ruta-fecha {
+      font-size: 14px;
+      color: #666;
+    }
+
+    .ruta-camion {
+      font-size: 18px;
+      font-weight: 600;
+      color: #333;
+    }
+
+    .ruta-estado {
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .ruta-estado.abierta {
+      background: #d4edda;
+      color: #155724;
+    }
+
+    .ruta-estado.cerrada {
+      background: #f8d7da;
+      color: #721c24;
+    }
+
+    /* Botones de acción para agregar movimientos */
+    .acciones-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .accion-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 16px 10px;
+      border: 2px solid #e0e0e0;
+      border-radius: 12px;
+      background: #fff;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .accion-btn:hover {
+      border-color: #4361ee;
+      background: #f0f4ff;
+    }
+
+    .accion-btn .icon {
+      font-size: 28px;
+      margin-bottom: 6px;
+    }
+
+    .accion-btn .label {
+      font-size: 12px;
+      font-weight: 600;
+      color: #333;
+      text-align: center;
+    }
+
+    /* Lista de movimientos */
+    .movimientos-list {
+      margin-top: 16px;
+    }
+
+    .movimientos-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: #666;
+      margin-bottom: 12px;
+    }
+
+    .movimiento-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px;
+      background: #f8f9fa;
+      border-radius: 8px;
+      margin-bottom: 8px;
+    }
+
+    .movimiento-info {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .movimiento-tipo {
+      font-size: 12px;
+      color: #666;
+    }
+
+    .movimiento-cliente {
+      font-size: 14px;
+      font-weight: 600;
+      color: #333;
+    }
+
+    .movimiento-monto {
+      font-size: 16px;
+      font-weight: 700;
+      color: #28a745;
+    }
+
+    .movimiento-tipo.transferencia { color: #4361ee; }
+    .movimiento-tipo.efectivo { color: #28a745; }
+    .movimiento-tipo.cuenta-corriente { color: #ffc107; }
+
+    /* Lista de rutas (historial) */
+    .ruta-list-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px;
+      background: #f8f9fa;
+      border-radius: 12px;
+      margin-bottom: 10px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .ruta-list-item:hover {
+      background: #e9ecef;
+    }
+
+    .ruta-list-info {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .ruta-list-fecha {
+      font-size: 14px;
+      color: #666;
+    }
+
+    .ruta-list-camion {
+      font-size: 16px;
+      font-weight: 600;
+      color: #333;
+    }
+
+    .ruta-list-total {
+      font-size: 18px;
+      font-weight: 700;
+      color: #4361ee;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 40px 20px;
+      color: #999;
+    }
+
+    .empty-state .icon {
+      font-size: 48px;
+      margin-bottom: 12px;
+    }
   </style>
 </head>
 <body>
@@ -252,8 +518,8 @@
 <div class="container">
   <div class="header">
     <img src="logo-negativo.png" alt="Mercosur" class="logo">
-    <h1>Registro de Transferencias</h1>
-    <p>Cargá el comprobante de transferencia</p>
+    <h1 id="headerTitle">Control de Rutas</h1>
+    <p id="headerSubtitle">Gestión de cobros para choferes</p>
   </div>
 
   <!-- ===== LOGIN ===== -->
@@ -275,24 +541,144 @@
     </button>
   </div>
 
-  <!-- ===== FORMULARIO ===== -->
-  <div id="formSection" class="card hidden">
+  <!-- ===== HOME ===== -->
+  <div id="homeSection" class="card hidden">
     <div class="welcome">
       Hola, <strong id="choferNombre"></strong>
     </div>
 
-    <div id="formAlert"></div>
+    <button class="btn btn-primary" onclick="showNuevaRuta()">
+      + Nueva Ruta
+    </button>
+
+    <button class="btn btn-outline" onclick="showMisRutas()">
+      Mis Rutas
+    </button>
+
+    <button class="btn-logout" onclick="logout()">
+      Cerrar sesión
+    </button>
+  </div>
+
+  <!-- ===== NUEVA RUTA (Selección de camión) ===== -->
+  <div id="nuevaRutaSection" class="card hidden">
+    <button class="btn-back" onclick="showHome()">← Volver</button>
+
+    <h2 style="font-size: 18px; margin-bottom: 16px;">Nueva Ruta</h2>
+
+    <div id="nuevaRutaAlert"></div>
+
+    <div class="form-group">
+      <label>Seleccioná el camión</label>
+      <select id="selectCamion">
+        <option value="">-- Elegí un camión --</option>
+        <option value="AE-591-EI">AE-591-EI</option>
+        <option value="OJA 403">OJA 403</option>
+        <option value="AF-028-YB">AF-028-YB</option>
+        <option value="AF-664-NY">AF-664-NY</option>
+        <option value="AF-399-KY">AF-399-KY</option>
+        <option value="AF-588-SU">AF-588-SU</option>
+        <option value="AF-469-UR">AF-469-UR</option>
+        <option value="AE-908-DF">AE-908-DF</option>
+        <option value="AE-908-DH">AE-908-DH</option>
+        <option value="AC-165-AJ">AC-165-AJ</option>
+        <option value="AE-908-DG">AE-908-DG</option>
+      </select>
+    </div>
+
+    <button class="btn btn-success" id="btnCrearRuta" onclick="crearRuta()">
+      Iniciar Ruta
+    </button>
+  </div>
+
+  <!-- ===== MIS RUTAS (Historial) ===== -->
+  <div id="misRutasSection" class="card hidden">
+    <button class="btn-back" onclick="showHome()">← Volver</button>
+
+    <h2 style="font-size: 18px; margin-bottom: 16px;">Mis Rutas</h2>
+
+    <div id="misRutasList"></div>
+  </div>
+
+  <!-- ===== RUTA ACTIVA ===== -->
+  <div id="rutaActivaSection" class="hidden">
+    <div class="resumen">
+      <div class="resumen-title">Total del día</div>
+      <div class="resumen-total" id="totalGeneral">$0,00</div>
+      <div class="resumen-items">
+        <div class="resumen-item">
+          <div class="resumen-item-label">Transferencias</div>
+          <div class="resumen-item-value" id="totalTransferencias">$0</div>
+        </div>
+        <div class="resumen-item">
+          <div class="resumen-item-label">Efectivo</div>
+          <div class="resumen-item-value" id="totalEfectivo">$0</div>
+        </div>
+        <div class="resumen-item">
+          <div class="resumen-item-label">Cta. Cte.</div>
+          <div class="resumen-item-value" id="totalCtaCte">$0</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="ruta-info">
+        <div class="ruta-info-left">
+          <span class="ruta-fecha" id="rutaFecha">--</span>
+          <span class="ruta-camion" id="rutaCamion">--</span>
+        </div>
+        <span class="ruta-estado abierta" id="rutaEstado">Abierta</span>
+      </div>
+
+      <div class="acciones-grid">
+        <button class="accion-btn" onclick="showAgregarMovimiento('transferencia')">
+          <span class="icon">📱</span>
+          <span class="label">Transferencia</span>
+        </button>
+        <button class="accion-btn" onclick="showAgregarMovimiento('efectivo')">
+          <span class="icon">💵</span>
+          <span class="label">Efectivo</span>
+        </button>
+        <button class="accion-btn" onclick="showAgregarMovimiento('ctacte')">
+          <span class="icon">📋</span>
+          <span class="label">Cta. Cte.</span>
+        </button>
+      </div>
+
+      <div class="movimientos-list">
+        <div class="movimientos-title">Movimientos de hoy</div>
+        <div id="movimientosList"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <button class="btn btn-secondary" id="btnCerrarRuta" onclick="toggleRuta()">
+        Cerrar Ruta
+      </button>
+      <button class="btn btn-outline" onclick="showHome()" style="margin-top: 10px;">
+        Volver al inicio
+      </button>
+    </div>
+  </div>
+
+  <!-- ===== AGREGAR TRANSFERENCIA ===== -->
+  <div id="transferenciaSection" class="card hidden">
+    <button class="btn-back" onclick="volverARuta()">← Volver a la ruta</button>
+
+    <h2 style="font-size: 18px; margin-bottom: 16px;">Agregar Transferencia</h2>
+
+    <div id="transferenciaAlert"></div>
 
     <div class="form-group">
       <label>Código de Cliente</label>
-      <input type="text" id="codCliente" placeholder="Ej: 1234" autocapitalize="characters">
+      <input type="text" id="transCodCliente" placeholder="Ej: 1234" autocapitalize="characters">
     </div>
 
     <div class="form-group">
-      <label>Monto de la transferencia</label>
+      <label>Monto</label>
       <div class="monto-prefix">
         <span>$</span>
-        <input type="number" id="monto" placeholder="0.00" inputmode="decimal" step="0.01" min="0">
+        <input type="number" id="transMonto" placeholder="0.00" inputmode="decimal" step="0.01" min="0">
       </div>
     </div>
 
@@ -301,7 +687,7 @@
       <div class="foto-upload" id="fotoUpload">
         <input type="file" id="fotoInput" accept="image/*" capture="environment" onchange="handleFoto(this)">
         <div id="fotoPlaceholder">
-          <div class="icon">&#128247;</div>
+          <div class="icon">📷</div>
           <div class="text">Tocá para sacar foto o elegir imagen</div>
         </div>
         <div id="fotoPreview" class="hidden">
@@ -311,34 +697,88 @@
       </div>
     </div>
 
-    <button class="btn btn-primary" id="btnSubmit" onclick="submit()">
-      Registrar Comprobante
-    </button>
-
-    <button class="btn-logout" onclick="logout()">
-      Cerrar sesión
+    <button class="btn btn-primary" id="btnTransferencia" onclick="guardarTransferencia()">
+      Registrar Transferencia
     </button>
   </div>
+
+  <!-- ===== AGREGAR EFECTIVO ===== -->
+  <div id="efectivoSection" class="card hidden">
+    <button class="btn-back" onclick="volverARuta()">← Volver a la ruta</button>
+
+    <h2 style="font-size: 18px; margin-bottom: 16px;">Agregar Efectivo</h2>
+
+    <div id="efectivoAlert"></div>
+
+    <div class="form-group">
+      <label>Código de Cliente</label>
+      <input type="text" id="efeCodCliente" placeholder="Ej: 1234" autocapitalize="characters">
+    </div>
+
+    <div class="form-group">
+      <label>Monto</label>
+      <div class="monto-prefix">
+        <span>$</span>
+        <input type="number" id="efeMonto" placeholder="0.00" inputmode="decimal" step="0.01" min="0">
+      </div>
+    </div>
+
+    <button class="btn btn-success" id="btnEfectivo" onclick="guardarEfectivo()">
+      Registrar Efectivo
+    </button>
+  </div>
+
+  <!-- ===== AGREGAR CUENTA CORRIENTE ===== -->
+  <div id="ctacteSection" class="card hidden">
+    <button class="btn-back" onclick="volverARuta()">← Volver a la ruta</button>
+
+    <h2 style="font-size: 18px; margin-bottom: 16px;">Agregar Cuenta Corriente</h2>
+
+    <div id="ctacteAlert"></div>
+
+    <div class="form-group">
+      <label>Código de Cliente</label>
+      <input type="text" id="ctaCodCliente" placeholder="Ej: 1234" autocapitalize="characters">
+    </div>
+
+    <div class="form-group">
+      <label>Monto</label>
+      <div class="monto-prefix">
+        <span>$</span>
+        <input type="number" id="ctaMonto" placeholder="0.00" inputmode="decimal" step="0.01" min="0">
+      </div>
+    </div>
+
+    <button class="btn btn-warning" id="btnCtaCte" onclick="guardarCtaCte()">
+      Registrar Cuenta Corriente
+    </button>
+  </div>
+
 </div>
 
 <script>
   // =============================================
-  // CONFIGURACIÓN - Pegá acá la URL de tu Apps Script
+  // CONFIGURACIÓN
   // =============================================
-  var API_URL = 'https://script.google.com/macros/s/AKfycbxvGpH1LfhodOeQu5-UfgkdDmHgc0-mHe24-4Co-W6KmtgdovirIwuCZrV2JilwJds/exec';
-  // Ejemplo: 'https://script.google.com/macros/s/AKfycbx.../exec'
+  var API_URL = 'https://script.google.com/macros/s/AKfycbyRls0BhnDEowsOvmLEEHjTLbKzyDS3qlP4maov5hxlF8y0fosXgMGzJ7FIxHOzarlL/exec';
 
   // =============================================
   // Estado
   // =============================================
   var session = JSON.parse(localStorage.getItem('chofer_session') || 'null');
+  var rutaActiva = JSON.parse(localStorage.getItem('ruta_activa') || 'null');
+  var movimientos = JSON.parse(localStorage.getItem('movimientos') || '[]');
   var fotoData = null;
   var fotoTipo = '';
   var fotoNombre = '';
 
-  // Si hay sesión guardada, mostrar formulario
+  // Inicializar
   if (session) {
-    showForm(session.nombre);
+    if (rutaActiva) {
+      showRutaActiva();
+    } else {
+      showHome();
+    }
   }
 
   // =============================================
@@ -370,7 +810,7 @@
       if (data.success) {
         session = { usuario: usuario, password: password, nombre: data.nombre };
         localStorage.setItem('chofer_session', JSON.stringify(session));
-        showForm(data.nombre);
+        showHome();
       } else {
         showAlert('loginAlert', data.error || 'Error al ingresar', 'error');
       }
@@ -379,6 +819,335 @@
       btn.disabled = false;
       btn.textContent = 'Ingresar';
       showAlert('loginAlert', 'Error de conexión. Intentá de nuevo.', 'error');
+    });
+  }
+
+  // =============================================
+  // Navegación
+  // =============================================
+  function hideAll() {
+    var sections = ['loginSection', 'homeSection', 'nuevaRutaSection', 'misRutasSection',
+                    'rutaActivaSection', 'transferenciaSection', 'efectivoSection', 'ctacteSection'];
+    sections.forEach(function(id) {
+      document.getElementById(id).classList.add('hidden');
+    });
+  }
+
+  function showHome() {
+    hideAll();
+    document.getElementById('homeSection').classList.remove('hidden');
+    document.getElementById('choferNombre').textContent = session.nombre;
+  }
+
+  function showNuevaRuta() {
+    hideAll();
+    document.getElementById('nuevaRutaSection').classList.remove('hidden');
+    document.getElementById('selectCamion').value = '';
+  }
+
+  function showMisRutas() {
+    hideAll();
+    document.getElementById('misRutasSection').classList.remove('hidden');
+    cargarMisRutas();
+  }
+
+  function showRutaActiva() {
+    hideAll();
+    document.getElementById('rutaActivaSection').classList.remove('hidden');
+    actualizarVistaRuta();
+    cargarMovimientosRuta();
+  }
+
+  function showAgregarMovimiento(tipo) {
+    hideAll();
+    if (tipo === 'transferencia') {
+      document.getElementById('transferenciaSection').classList.remove('hidden');
+      document.getElementById('transCodCliente').value = '';
+      document.getElementById('transMonto').value = '';
+      resetFoto();
+    } else if (tipo === 'efectivo') {
+      document.getElementById('efectivoSection').classList.remove('hidden');
+      document.getElementById('efeCodCliente').value = '';
+      document.getElementById('efeMonto').value = '';
+    } else if (tipo === 'ctacte') {
+      document.getElementById('ctacteSection').classList.remove('hidden');
+      document.getElementById('ctaCodCliente').value = '';
+      document.getElementById('ctaMonto').value = '';
+    }
+  }
+
+  function volverARuta() {
+    showRutaActiva();
+  }
+
+  // =============================================
+  // Crear Ruta
+  // =============================================
+  function crearRuta() {
+    var camion = document.getElementById('selectCamion').value;
+    if (!camion) {
+      showAlert('nuevaRutaAlert', 'Seleccioná un camión', 'error');
+      return;
+    }
+
+    var btn = document.getElementById('btnCrearRuta');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span>Creando...';
+
+    fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({
+        action: 'crearRuta',
+        usuario: session.usuario,
+        password: session.password,
+        chofer: session.nombre,
+        camion: camion
+      })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      btn.disabled = false;
+      btn.textContent = 'Iniciar Ruta';
+
+      if (data.success) {
+        rutaActiva = data.ruta;
+        movimientos = [];
+        localStorage.setItem('ruta_activa', JSON.stringify(rutaActiva));
+        localStorage.setItem('movimientos', JSON.stringify(movimientos));
+        showRutaActiva();
+      } else {
+        showAlert('nuevaRutaAlert', data.error || 'Error al crear ruta', 'error');
+      }
+    })
+    .catch(function(err) {
+      btn.disabled = false;
+      btn.textContent = 'Iniciar Ruta';
+      showAlert('nuevaRutaAlert', 'Error de conexión', 'error');
+    });
+  }
+
+  // =============================================
+  // Actualizar vista de ruta activa
+  // =============================================
+  function actualizarVistaRuta() {
+    if (!rutaActiva) return;
+
+    document.getElementById('rutaFecha').textContent = rutaActiva.fecha;
+    document.getElementById('rutaCamion').textContent = rutaActiva.camion;
+
+    var estadoEl = document.getElementById('rutaEstado');
+    var btnCerrar = document.getElementById('btnCerrarRuta');
+
+    if (rutaActiva.estado === 'cerrada') {
+      estadoEl.textContent = 'Cerrada';
+      estadoEl.className = 'ruta-estado cerrada';
+      btnCerrar.textContent = 'Reabrir Ruta';
+      btnCerrar.className = 'btn btn-success';
+    } else {
+      estadoEl.textContent = 'Abierta';
+      estadoEl.className = 'ruta-estado abierta';
+      btnCerrar.textContent = 'Cerrar Ruta';
+      btnCerrar.className = 'btn btn-secondary';
+    }
+
+    actualizarTotales();
+  }
+
+  function actualizarTotales() {
+    var totalTrans = 0;
+    var totalEfe = 0;
+    var totalCta = 0;
+
+    movimientos.forEach(function(m) {
+      var monto = parseFloat(m.monto) || 0;
+      if (m.tipo === 'transferencia') totalTrans += monto;
+      else if (m.tipo === 'efectivo') totalEfe += monto;
+      else if (m.tipo === 'ctacte') totalCta += monto;
+    });
+
+    var totalGen = totalTrans + totalEfe + totalCta;
+
+    document.getElementById('totalTransferencias').textContent = formatMoney(totalTrans);
+    document.getElementById('totalEfectivo').textContent = formatMoney(totalEfe);
+    document.getElementById('totalCtaCte').textContent = formatMoney(totalCta);
+    document.getElementById('totalGeneral').textContent = formatMoney(totalGen);
+  }
+
+  function formatMoney(n) {
+    return '$' + n.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+  }
+
+  // =============================================
+  // Cargar movimientos de la ruta
+  // =============================================
+  function cargarMovimientosRuta() {
+    if (!rutaActiva) return;
+
+    fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({
+        action: 'getMovimientos',
+        usuario: session.usuario,
+        password: session.password,
+        rutaId: rutaActiva.id
+      })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (data.success) {
+        movimientos = data.movimientos || [];
+        localStorage.setItem('movimientos', JSON.stringify(movimientos));
+        renderMovimientos();
+        actualizarTotales();
+      }
+    })
+    .catch(function(err) {
+      console.log('Error cargando movimientos:', err);
+    });
+  }
+
+  function renderMovimientos() {
+    var container = document.getElementById('movimientosList');
+
+    if (movimientos.length === 0) {
+      container.innerHTML = '<div class="empty-state"><div class="icon">📝</div><p>Todavía no hay movimientos</p></div>';
+      return;
+    }
+
+    var html = '';
+    // Mostrar los últimos primero
+    var sorted = movimientos.slice().reverse();
+    sorted.forEach(function(m) {
+      var tipoLabel = m.tipo === 'transferencia' ? 'Transferencia' : (m.tipo === 'efectivo' ? 'Efectivo' : 'Cta. Corriente');
+      var tipoClass = m.tipo === 'transferencia' ? 'transferencia' : (m.tipo === 'efectivo' ? 'efectivo' : 'cuenta-corriente');
+      html += '<div class="movimiento-item">';
+      html += '<div class="movimiento-info">';
+      html += '<span class="movimiento-tipo ' + tipoClass + '">' + tipoLabel + '</span>';
+      html += '<span class="movimiento-cliente">Cliente: ' + m.codCliente + '</span>';
+      html += '</div>';
+      html += '<span class="movimiento-monto">' + formatMoney(parseFloat(m.monto)) + '</span>';
+      html += '</div>';
+    });
+    container.innerHTML = html;
+  }
+
+  // =============================================
+  // Cerrar/Reabrir Ruta
+  // =============================================
+  function toggleRuta() {
+    if (!rutaActiva) return;
+
+    var nuevoEstado = rutaActiva.estado === 'cerrada' ? 'abierta' : 'cerrada';
+    var btn = document.getElementById('btnCerrarRuta');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span>Procesando...';
+
+    fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({
+        action: 'toggleRuta',
+        usuario: session.usuario,
+        password: session.password,
+        rutaId: rutaActiva.id,
+        estado: nuevoEstado
+      })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      btn.disabled = false;
+      if (data.success) {
+        rutaActiva.estado = nuevoEstado;
+        localStorage.setItem('ruta_activa', JSON.stringify(rutaActiva));
+        actualizarVistaRuta();
+      } else {
+        alert(data.error || 'Error al cambiar estado');
+      }
+    })
+    .catch(function(err) {
+      btn.disabled = false;
+      alert('Error de conexión');
+    });
+  }
+
+  // =============================================
+  // Mis Rutas (Historial)
+  // =============================================
+  function cargarMisRutas() {
+    var container = document.getElementById('misRutasList');
+    container.innerHTML = '<div class="empty-state"><span class="spinner" style="border-top-color: #4361ee; border-color: rgba(67,97,238,0.3);"></span><p>Cargando rutas...</p></div>';
+
+    fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({
+        action: 'getMisRutas',
+        usuario: session.usuario,
+        password: session.password,
+        chofer: session.nombre
+      })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (data.success) {
+        renderMisRutas(data.rutas || []);
+      } else {
+        container.innerHTML = '<div class="empty-state"><p>' + (data.error || 'Error al cargar') + '</p></div>';
+      }
+    })
+    .catch(function(err) {
+      container.innerHTML = '<div class="empty-state"><p>Error de conexión</p></div>';
+    });
+  }
+
+  function renderMisRutas(rutas) {
+    var container = document.getElementById('misRutasList');
+
+    if (rutas.length === 0) {
+      container.innerHTML = '<div class="empty-state"><div class="icon">🚚</div><p>No tenés rutas registradas</p></div>';
+      return;
+    }
+
+    var html = '';
+    rutas.forEach(function(r) {
+      html += '<div class="ruta-list-item" onclick="abrirRuta(\'' + r.id + '\')">';
+      html += '<div class="ruta-list-info">';
+      html += '<span class="ruta-list-fecha">' + r.fecha + ' - ' + (r.estado === 'cerrada' ? 'Cerrada' : 'Abierta') + '</span>';
+      html += '<span class="ruta-list-camion">' + r.camion + '</span>';
+      html += '</div>';
+      html += '<span class="ruta-list-total">' + formatMoney(parseFloat(r.total) || 0) + '</span>';
+      html += '</div>';
+    });
+    container.innerHTML = html;
+  }
+
+  function abrirRuta(rutaId) {
+    fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({
+        action: 'getRuta',
+        usuario: session.usuario,
+        password: session.password,
+        rutaId: rutaId
+      })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (data.success) {
+        rutaActiva = data.ruta;
+        movimientos = data.movimientos || [];
+        localStorage.setItem('ruta_activa', JSON.stringify(rutaActiva));
+        localStorage.setItem('movimientos', JSON.stringify(movimientos));
+        showRutaActiva();
+      } else {
+        alert(data.error || 'Error al abrir ruta');
+      }
+    })
+    .catch(function(err) {
+      alert('Error de conexión');
     });
   }
 
@@ -404,88 +1173,7 @@
     reader.readAsDataURL(file);
   }
 
-  // =============================================
-  // Submit
-  // =============================================
-  function submit() {
-    var codCliente = document.getElementById('codCliente').value.trim();
-    var monto = document.getElementById('monto').value.trim();
-
-    if (!codCliente) {
-      showAlert('formAlert', 'Ingresá el código de cliente', 'error');
-      return;
-    }
-    if (!monto || parseFloat(monto) <= 0) {
-      showAlert('formAlert', 'Ingresá un monto válido', 'error');
-      return;
-    }
-    if (!fotoData) {
-      showAlert('formAlert', 'Sacale una foto al comprobante', 'error');
-      return;
-    }
-
-    var btn = document.getElementById('btnSubmit');
-    btn.disabled = true;
-    btn.innerHTML = '<span class="spinner"></span>Enviando...';
-
-    var payload = {
-      action: 'submit',
-      usuario: session.usuario,
-      password: session.password,
-      chofer: session.nombre,
-      codCliente: codCliente,
-      monto: monto,
-      fotoBase64: fotoData,
-      fotoTipo: fotoTipo,
-      fotoNombre: fotoNombre
-    };
-
-    fetch(API_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain' },
-      body: JSON.stringify(payload)
-    })
-    .then(function(r) { return r.json(); })
-    .then(function(data) {
-      btn.disabled = false;
-      btn.textContent = 'Registrar Comprobante';
-
-      if (data.success) {
-        showAlert('formAlert', 'Comprobante registrado correctamente', 'success');
-        resetForm();
-      } else {
-        showAlert('formAlert', data.error || 'Error al registrar', 'error');
-      }
-    })
-    .catch(function(err) {
-      btn.disabled = false;
-      btn.textContent = 'Registrar Comprobante';
-      showAlert('formAlert', 'Error de conexión. Intentá de nuevo.', 'error');
-    });
-  }
-
-  // =============================================
-  // Utilidades
-  // =============================================
-  function showForm(nombre) {
-    document.getElementById('loginSection').classList.add('hidden');
-    document.getElementById('formSection').classList.remove('hidden');
-    document.getElementById('choferNombre').textContent = nombre;
-  }
-
-  function logout() {
-    session = null;
-    localStorage.removeItem('chofer_session');
-    document.getElementById('formSection').classList.add('hidden');
-    document.getElementById('loginSection').classList.remove('hidden');
-    document.getElementById('loginUser').value = '';
-    document.getElementById('loginPass').value = '';
-    resetForm();
-  }
-
-  function resetForm() {
-    document.getElementById('codCliente').value = '';
-    document.getElementById('monto').value = '';
+  function resetFoto() {
     document.getElementById('fotoInput').value = '';
     document.getElementById('fotoPlaceholder').classList.remove('hidden');
     document.getElementById('fotoPreview').classList.add('hidden');
@@ -495,14 +1183,203 @@
     fotoNombre = '';
   }
 
+  // =============================================
+  // Guardar Transferencia
+  // =============================================
+  function guardarTransferencia() {
+    var codCliente = document.getElementById('transCodCliente').value.trim();
+    var monto = document.getElementById('transMonto').value.trim();
+
+    if (!codCliente) {
+      showAlert('transferenciaAlert', 'Ingresá el código de cliente', 'error');
+      return;
+    }
+    if (!monto || parseFloat(monto) <= 0) {
+      showAlert('transferenciaAlert', 'Ingresá un monto válido', 'error');
+      return;
+    }
+    if (!fotoData) {
+      showAlert('transferenciaAlert', 'Sacale una foto al comprobante', 'error');
+      return;
+    }
+
+    var btn = document.getElementById('btnTransferencia');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span>Enviando...';
+
+    fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({
+        action: 'agregarMovimiento',
+        tipo: 'transferencia',
+        usuario: session.usuario,
+        password: session.password,
+        chofer: session.nombre,
+        rutaId: rutaActiva.id,
+        codCliente: codCliente,
+        monto: monto,
+        fotoBase64: fotoData,
+        fotoTipo: fotoTipo,
+        fotoNombre: fotoNombre
+      })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      btn.disabled = false;
+      btn.textContent = 'Registrar Transferencia';
+
+      if (data.success) {
+        movimientos.push({ tipo: 'transferencia', codCliente: codCliente, monto: monto });
+        localStorage.setItem('movimientos', JSON.stringify(movimientos));
+        showAlert('transferenciaAlert', 'Transferencia registrada', 'success');
+        setTimeout(function() { volverARuta(); }, 1000);
+      } else {
+        showAlert('transferenciaAlert', data.error || 'Error al registrar', 'error');
+      }
+    })
+    .catch(function(err) {
+      btn.disabled = false;
+      btn.textContent = 'Registrar Transferencia';
+      showAlert('transferenciaAlert', 'Error de conexión', 'error');
+    });
+  }
+
+  // =============================================
+  // Guardar Efectivo
+  // =============================================
+  function guardarEfectivo() {
+    var codCliente = document.getElementById('efeCodCliente').value.trim();
+    var monto = document.getElementById('efeMonto').value.trim();
+
+    if (!codCliente) {
+      showAlert('efectivoAlert', 'Ingresá el código de cliente', 'error');
+      return;
+    }
+    if (!monto || parseFloat(monto) <= 0) {
+      showAlert('efectivoAlert', 'Ingresá un monto válido', 'error');
+      return;
+    }
+
+    var btn = document.getElementById('btnEfectivo');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span>Enviando...';
+
+    fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({
+        action: 'agregarMovimiento',
+        tipo: 'efectivo',
+        usuario: session.usuario,
+        password: session.password,
+        chofer: session.nombre,
+        rutaId: rutaActiva.id,
+        codCliente: codCliente,
+        monto: monto
+      })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      btn.disabled = false;
+      btn.textContent = 'Registrar Efectivo';
+
+      if (data.success) {
+        movimientos.push({ tipo: 'efectivo', codCliente: codCliente, monto: monto });
+        localStorage.setItem('movimientos', JSON.stringify(movimientos));
+        showAlert('efectivoAlert', 'Efectivo registrado', 'success');
+        setTimeout(function() { volverARuta(); }, 1000);
+      } else {
+        showAlert('efectivoAlert', data.error || 'Error al registrar', 'error');
+      }
+    })
+    .catch(function(err) {
+      btn.disabled = false;
+      btn.textContent = 'Registrar Efectivo';
+      showAlert('efectivoAlert', 'Error de conexión', 'error');
+    });
+  }
+
+  // =============================================
+  // Guardar Cuenta Corriente
+  // =============================================
+  function guardarCtaCte() {
+    var codCliente = document.getElementById('ctaCodCliente').value.trim();
+    var monto = document.getElementById('ctaMonto').value.trim();
+
+    if (!codCliente) {
+      showAlert('ctacteAlert', 'Ingresá el código de cliente', 'error');
+      return;
+    }
+    if (!monto || parseFloat(monto) <= 0) {
+      showAlert('ctacteAlert', 'Ingresá un monto válido', 'error');
+      return;
+    }
+
+    var btn = document.getElementById('btnCtaCte');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span>Enviando...';
+
+    fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({
+        action: 'agregarMovimiento',
+        tipo: 'ctacte',
+        usuario: session.usuario,
+        password: session.password,
+        chofer: session.nombre,
+        rutaId: rutaActiva.id,
+        codCliente: codCliente,
+        monto: monto
+      })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      btn.disabled = false;
+      btn.textContent = 'Registrar Cuenta Corriente';
+
+      if (data.success) {
+        movimientos.push({ tipo: 'ctacte', codCliente: codCliente, monto: monto });
+        localStorage.setItem('movimientos', JSON.stringify(movimientos));
+        showAlert('ctacteAlert', 'Cuenta Corriente registrada', 'success');
+        setTimeout(function() { volverARuta(); }, 1000);
+      } else {
+        showAlert('ctacteAlert', data.error || 'Error al registrar', 'error');
+      }
+    })
+    .catch(function(err) {
+      btn.disabled = false;
+      btn.textContent = 'Registrar Cuenta Corriente';
+      showAlert('ctacteAlert', 'Error de conexión', 'error');
+    });
+  }
+
+  // =============================================
+  // Utilidades
+  // =============================================
+  function logout() {
+    session = null;
+    rutaActiva = null;
+    movimientos = [];
+    localStorage.removeItem('chofer_session');
+    localStorage.removeItem('ruta_activa');
+    localStorage.removeItem('movimientos');
+    hideAll();
+    document.getElementById('loginSection').classList.remove('hidden');
+    document.getElementById('loginUser').value = '';
+    document.getElementById('loginPass').value = '';
+  }
+
   function showAlert(elementId, message, type) {
     var el = document.getElementById(elementId);
+    if (!el) return;
     el.className = 'alert alert-' + type;
     el.textContent = message;
     el.style.display = 'block';
 
     if (type === 'success') {
-      setTimeout(function() { el.style.display = 'none'; }, 4000);
+      setTimeout(function() { el.style.display = 'none'; }, 3000);
     } else {
       setTimeout(function() { el.style.display = 'none'; }, 5000);
     }
