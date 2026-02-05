@@ -29,6 +29,8 @@ function doPost(e) {
         return handleAgregarMovimiento(data);
       case 'toggleRuta':
         return handleToggleRuta(data);
+      case 'verificarCliente':
+        return handleVerificarCliente(data);
       case 'submit':
         // Mantener compatibilidad con versión anterior
         return handleSubmitLegacy(data);
@@ -267,9 +269,11 @@ function handleAgregarMovimiento(data) {
   var monto = parseFloat(data.monto) || 0;
 
   if (data.tipo === 'transferencia') {
-    // Guardar foto en Drive
+    // Guardar foto en Drive (solo si no es exceptuado)
     var fotoUrl = '';
-    if (data.fotoBase64) {
+    var esExceptuado = data.exceptuado === 'Sí';
+
+    if (data.fotoBase64 && !esExceptuado) {
       try {
         var folder = DriveApp.getFolderById(FOLDER_ID);
         var base64Data = data.fotoBase64.split(',')[1] || data.fotoBase64;
@@ -293,8 +297,8 @@ function handleAgregarMovimiento(data) {
       }
     }
 
-    var sheet = getOrCreateSheet(ss, 'Transferencias', ['ID Ruta', 'Fecha', 'Hora', 'Chofer', 'Cod. Cliente', 'Monto', 'Foto', 'Estado']);
-    sheet.appendRow([data.rutaId, fecha, hora, data.chofer, data.codCliente, monto, fotoUrl, 'Pendiente']);
+    var sheet = getOrCreateSheet(ss, 'Transferencias', ['ID Ruta', 'Fecha', 'Hora', 'Chofer', 'Cod. Cliente', 'Monto', 'Foto', 'Estado', 'Exceptuado']);
+    sheet.appendRow([data.rutaId, fecha, hora, data.chofer, data.codCliente, monto, fotoUrl, 'Pendiente', data.exceptuado || 'No']);
 
     actualizarTotalesRuta(ss, data.rutaId);
     return jsonResponse({ success: true, message: 'Transferencia registrada' });
@@ -343,6 +347,37 @@ function handleToggleRuta(data) {
   }
 
   return jsonResponse({ success: false, error: 'No se encontró la ruta' });
+}
+
+// =============================================
+// VERIFICAR CLIENTE (Exceptuados / C_Corriente)
+// =============================================
+function handleVerificarCliente(data) {
+  if (!validarCredenciales(data)) {
+    return jsonResponse({ success: false, error: 'Credenciales inválidas' });
+  }
+
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheetName = data.tipo === 'exceptuado' ? 'Exceptuados' : 'C_Corriente';
+  var sheet = ss.getSheetByName(sheetName);
+
+  if (!sheet) {
+    // Si no existe la hoja, devolver no encontrado
+    return jsonResponse({ success: true, encontrado: false });
+  }
+
+  var rows = sheet.getDataRange().getValues();
+  var codBuscado = data.codCliente.toString().trim().toUpperCase();
+
+  // Buscar en columna A (índice 0)
+  for (var i = 1; i < rows.length; i++) {
+    var codEnLista = rows[i][0].toString().trim().toUpperCase();
+    if (codEnLista === codBuscado) {
+      return jsonResponse({ success: true, encontrado: true });
+    }
+  }
+
+  return jsonResponse({ success: true, encontrado: false });
 }
 
 // =============================================

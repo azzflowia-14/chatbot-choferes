@@ -239,6 +239,12 @@
       border: 1px solid #f5c6cb;
     }
 
+    .alert-warning {
+      background: #fff3cd;
+      color: #856404;
+      border: 1px solid #ffeeba;
+    }
+
     .spinner {
       display: inline-block;
       width: 20px;
@@ -671,7 +677,7 @@
 
     <div class="form-group">
       <label>Código de Cliente</label>
-      <input type="text" id="transCodCliente" placeholder="Ej: 1234" autocapitalize="characters">
+      <input type="text" id="transCodCliente" placeholder="Ej: 1234" autocapitalize="characters" onblur="verificarExceptuado()">
     </div>
 
     <div class="form-group">
@@ -682,7 +688,7 @@
       </div>
     </div>
 
-    <div class="form-group">
+    <div class="form-group" id="fotoGroup">
       <label>Foto del comprobante</label>
       <div class="foto-upload" id="fotoUpload">
         <input type="file" id="fotoInput" accept="image/*" capture="environment" onchange="handleFoto(this)">
@@ -695,6 +701,10 @@
           <div class="filename" id="fotoName"></div>
         </div>
       </div>
+    </div>
+
+    <div id="exceptuadoInfo" class="alert alert-warning hidden" style="margin-bottom: 16px;">
+      Este cliente es <strong>EXCEPTUADO</strong>. Se registrará el monto sin foto (transferirá más tarde).
     </div>
 
     <button class="btn btn-primary" id="btnTransferencia" onclick="guardarTransferencia()">
@@ -771,6 +781,7 @@
   var fotoData = null;
   var fotoTipo = '';
   var fotoNombre = '';
+  var esExceptuado = false;
 
   // Inicializar
   if (session) {
@@ -865,6 +876,7 @@
       document.getElementById('transCodCliente').value = '';
       document.getElementById('transMonto').value = '';
       resetFoto();
+      resetExceptuado();
     } else if (tipo === 'efectivo') {
       document.getElementById('efectivoSection').classList.remove('hidden');
       document.getElementById('efeCodCliente').value = '';
@@ -1184,6 +1196,49 @@
   }
 
   // =============================================
+  // Verificar Exceptuado
+  // =============================================
+  function resetExceptuado() {
+    esExceptuado = false;
+    document.getElementById('fotoGroup').classList.remove('hidden');
+    document.getElementById('exceptuadoInfo').classList.add('hidden');
+  }
+
+  function verificarExceptuado() {
+    var codCliente = document.getElementById('transCodCliente').value.trim();
+    if (!codCliente) {
+      resetExceptuado();
+      return;
+    }
+
+    fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({
+        action: 'verificarCliente',
+        tipo: 'exceptuado',
+        usuario: session.usuario,
+        password: session.password,
+        codCliente: codCliente
+      })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (data.success && data.encontrado) {
+        esExceptuado = true;
+        document.getElementById('fotoGroup').classList.add('hidden');
+        document.getElementById('exceptuadoInfo').classList.remove('hidden');
+        resetFoto();
+      } else {
+        resetExceptuado();
+      }
+    })
+    .catch(function(err) {
+      console.log('Error verificando exceptuado:', err);
+    });
+  }
+
+  // =============================================
   // Guardar Transferencia
   // =============================================
   function guardarTransferencia() {
@@ -1198,7 +1253,8 @@
       showAlert('transferenciaAlert', 'Ingresá un monto válido', 'error');
       return;
     }
-    if (!fotoData) {
+    // Solo requerir foto si NO es exceptuado
+    if (!esExceptuado && !fotoData) {
       showAlert('transferenciaAlert', 'Sacale una foto al comprobante', 'error');
       return;
     }
@@ -1207,22 +1263,29 @@
     btn.disabled = true;
     btn.innerHTML = '<span class="spinner"></span>Enviando...';
 
+    var payload = {
+      action: 'agregarMovimiento',
+      tipo: 'transferencia',
+      usuario: session.usuario,
+      password: session.password,
+      chofer: session.nombre,
+      rutaId: rutaActiva.id,
+      codCliente: codCliente,
+      monto: monto,
+      exceptuado: esExceptuado ? 'Sí' : 'No'
+    };
+
+    // Solo agregar foto si no es exceptuado
+    if (!esExceptuado && fotoData) {
+      payload.fotoBase64 = fotoData;
+      payload.fotoTipo = fotoTipo;
+      payload.fotoNombre = fotoNombre;
+    }
+
     fetch(API_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain' },
-      body: JSON.stringify({
-        action: 'agregarMovimiento',
-        tipo: 'transferencia',
-        usuario: session.usuario,
-        password: session.password,
-        chofer: session.nombre,
-        rutaId: rutaActiva.id,
-        codCliente: codCliente,
-        monto: monto,
-        fotoBase64: fotoData,
-        fotoTipo: fotoTipo,
-        fotoNombre: fotoNombre
-      })
+      body: JSON.stringify(payload)
     })
     .then(function(r) { return r.json(); })
     .then(function(data) {
@@ -1318,6 +1381,40 @@
 
     var btn = document.getElementById('btnCtaCte');
     btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span>Verificando...';
+
+    // Primero verificar si el cliente está habilitado para cuenta corriente
+    fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({
+        action: 'verificarCliente',
+        tipo: 'ctacte',
+        usuario: session.usuario,
+        password: session.password,
+        codCliente: codCliente
+      })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (data.success && data.encontrado) {
+        // Cliente habilitado, proceder a guardar
+        enviarCtaCte(codCliente, monto);
+      } else {
+        btn.disabled = false;
+        btn.textContent = 'Registrar Cuenta Corriente';
+        showAlert('ctacteAlert', 'Este cliente NO pertenece a Cuenta Corriente', 'error');
+      }
+    })
+    .catch(function(err) {
+      btn.disabled = false;
+      btn.textContent = 'Registrar Cuenta Corriente';
+      showAlert('ctacteAlert', 'Error de conexión', 'error');
+    });
+  }
+
+  function enviarCtaCte(codCliente, monto) {
+    var btn = document.getElementById('btnCtaCte');
     btn.innerHTML = '<span class="spinner"></span>Enviando...';
 
     fetch(API_URL, {
