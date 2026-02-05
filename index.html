@@ -575,6 +575,11 @@
     <div id="nuevaRutaAlert"></div>
 
     <div class="form-group">
+      <label>Ingrese número de carga CHESS</label>
+      <input type="text" id="inputChess" placeholder="Ej: 12345" autocapitalize="characters">
+    </div>
+
+    <div class="form-group">
       <label>Seleccioná el camión</label>
       <select id="selectCamion">
         <option value="">-- Elegí un camión --</option>
@@ -632,6 +637,7 @@
         <div class="ruta-info-left">
           <span class="ruta-fecha" id="rutaFecha">--</span>
           <span class="ruta-camion" id="rutaCamion">--</span>
+          <span class="ruta-fecha" id="rutaChess">CHESS: --</span>
         </div>
         <span class="ruta-estado abierta" id="rutaEstado">Abierta</span>
       </div>
@@ -855,6 +861,7 @@
   function showNuevaRuta() {
     hideAll();
     document.getElementById('nuevaRutaSection').classList.remove('hidden');
+    document.getElementById('inputChess').value = '';
     document.getElementById('selectCamion').value = '';
   }
 
@@ -900,7 +907,13 @@
   // Crear Ruta
   // =============================================
   function crearRuta() {
+    var chess = document.getElementById('inputChess').value.trim();
     var camion = document.getElementById('selectCamion').value;
+
+    if (!chess) {
+      showAlert('nuevaRutaAlert', 'Ingresá el número de carga CHESS', 'error');
+      return;
+    }
     if (!camion) {
       showAlert('nuevaRutaAlert', 'Seleccioná un camión', 'error');
       return;
@@ -918,7 +931,8 @@
         usuario: session.usuario,
         password: session.password,
         chofer: session.nombre,
-        camion: camion
+        camion: camion,
+        chess: chess
       })
     })
     .then(function(r) { return r.json(); })
@@ -951,6 +965,7 @@
 
     document.getElementById('rutaFecha').textContent = rutaActiva.fecha;
     document.getElementById('rutaCamion').textContent = rutaActiva.camion;
+    document.getElementById('rutaChess').textContent = 'CHESS: ' + (rutaActiva.chess || '--');
 
     var estadoEl = document.getElementById('rutaEstado');
     var btnCerrar = document.getElementById('btnCerrarRuta');
@@ -1131,7 +1146,7 @@
       html += '<div class="ruta-list-item" onclick="abrirRuta(\'' + r.id + '\')">';
       html += '<div class="ruta-list-info">';
       html += '<span class="ruta-list-fecha">' + r.fecha + ' - ' + (r.estado === 'cerrada' ? 'Cerrada' : 'Abierta') + '</span>';
-      html += '<span class="ruta-list-camion">' + r.camion + '</span>';
+      html += '<span class="ruta-list-camion">' + r.camion + (r.chess ? ' | CHESS: ' + r.chess : '') + '</span>';
       html += '</div>';
       html += '<span class="ruta-list-total">' + formatMoney(parseFloat(r.total) || 0) + '</span>';
       html += '</div>';

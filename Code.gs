@@ -77,7 +77,7 @@ function handleCrearRuta(data) {
   }
 
   var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var sheet = getOrCreateSheet(ss, 'Rutas', ['ID', 'Fecha', 'Hora', 'Chofer', 'Camion', 'Estado', 'Total Trans.', 'Total Efectivo', 'Total Cta.Cte.', 'Total General']);
+  var sheet = getOrCreateSheet(ss, 'Rutas', ['ID', 'Fecha', 'Hora', 'Chofer', 'Camion', 'CHESS', 'Estado', 'Total Trans.', 'Total Efectivo', 'Total Cta.Cte.', 'Total General']);
 
   var now = new Date();
   var rutaId = now.getTime().toString();
@@ -90,6 +90,7 @@ function handleCrearRuta(data) {
     hora,
     data.chofer,
     data.camion,
+    data.chess || '',
     'abierta',
     0,
     0,
@@ -105,6 +106,7 @@ function handleCrearRuta(data) {
       hora: hora,
       chofer: data.chofer,
       camion: data.camion,
+      chess: data.chess || '',
       estado: 'abierta'
     }
   });
@@ -135,8 +137,9 @@ function handleGetMisRutas(data) {
         fecha: rows[i][1],
         hora: rows[i][2],
         camion: rows[i][4],
-        estado: rows[i][5],
-        total: rows[i][9] || 0
+        chess: rows[i][5],
+        estado: rows[i][6],
+        total: rows[i][10] || 0
       });
     }
   }
@@ -173,7 +176,8 @@ function handleGetRuta(data) {
         hora: rows[i][2],
         chofer: rows[i][3],
         camion: rows[i][4],
-        estado: rows[i][5]
+        chess: rows[i][5],
+        estado: rows[i][6]
       };
       break;
     }
@@ -341,7 +345,7 @@ function handleToggleRuta(data) {
 
   for (var i = 1; i < rows.length; i++) {
     if (rows[i][0].toString() === data.rutaId) {
-      sheet.getRange(i + 1, 6).setValue(data.estado);
+      sheet.getRange(i + 1, 7).setValue(data.estado);
       return jsonResponse({ success: true, estado: data.estado });
     }
   }
@@ -460,10 +464,10 @@ function actualizarTotalesRuta(ss, rutaId) {
     var rowsRutas = sheetRutas.getDataRange().getValues();
     for (var i = 1; i < rowsRutas.length; i++) {
       if (rowsRutas[i][0].toString() === rutaId) {
-        sheetRutas.getRange(i + 1, 7).setValue(totalTrans);
-        sheetRutas.getRange(i + 1, 8).setValue(totalEfe);
-        sheetRutas.getRange(i + 1, 9).setValue(totalCta);
-        sheetRutas.getRange(i + 1, 10).setValue(totalGeneral);
+        sheetRutas.getRange(i + 1, 8).setValue(totalTrans);
+        sheetRutas.getRange(i + 1, 9).setValue(totalEfe);
+        sheetRutas.getRange(i + 1, 10).setValue(totalCta);
+        sheetRutas.getRange(i + 1, 11).setValue(totalGeneral);
         break;
       }
     }
