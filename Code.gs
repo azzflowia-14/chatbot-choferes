@@ -31,6 +31,12 @@ function doPost(e) {
         return handleToggleRuta(data);
       case 'verificarCliente':
         return handleVerificarCliente(data);
+      case 'getRutasParaDescarga':
+        return handleGetRutasParaDescarga(data);
+      case 'subirFotoDescarga':
+        return handleSubirFotoDescarga(data);
+      case 'getFotosDescarga':
+        return handleGetFotosDescarga(data);
       case 'submit':
         // Mantener compatibilidad con versión anterior
         return handleSubmitLegacy(data);
@@ -55,13 +61,15 @@ function handleLogin(data) {
 
   var rows = sheet.getDataRange().getValues();
 
+  // Columnas: A=Nombre, B=Usuario, C=Password, D=Tipo (Chofer/Auxiliar)
   for (var i = 1; i < rows.length; i++) {
     var nombre = rows[i][0];
     var usuario = rows[i][1].toString().trim().toLowerCase();
     var password = rows[i][2].toString().trim();
+    var tipo = rows[i][3] ? rows[i][3].toString().trim() : 'Chofer';
 
     if (usuario === data.usuario.trim().toLowerCase() && password === data.password.trim()) {
-      return jsonResponse({ success: true, nombre: nombre });
+      return jsonResponse({ success: true, nombre: nombre, tipo: tipo });
     }
   }
 
@@ -382,6 +390,122 @@ function handleVerificarCliente(data) {
   }
 
   return jsonResponse({ success: true, encontrado: false });
+}
+
+// =============================================
+// AUXILIARES - Rutas para descarga
+// =============================================
+function handleGetRutasParaDescarga(data) {
+  if (!validarCredenciales(data)) {
+    return jsonResponse({ success: false, error: 'Credenciales inválidas' });
+  }
+
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName('Rutas');
+
+  if (!sheet) {
+    return jsonResponse({ success: true, rutas: [] });
+  }
+
+  var rows = sheet.getDataRange().getValues();
+  var rutas = [];
+  var hoy = Utilities.formatDate(new Date(), 'America/Argentina/Buenos_Aires', 'dd/MM/yyyy');
+
+  // Mostrar rutas de hoy (o todas las abiertas si querés)
+  for (var i = 1; i < rows.length; i++) {
+    // Mostrar todas las rutas (no solo las de hoy, para que puedan cargar descargas de días anteriores)
+    rutas.push({
+      id: rows[i][0].toString(),
+      fecha: rows[i][1],
+      chofer: rows[i][3],
+      camion: rows[i][4],
+      chess: rows[i][5],
+      estado: rows[i][6]
+    });
+  }
+
+  // Ordenar por fecha más reciente
+  rutas.reverse();
+
+  return jsonResponse({ success: true, rutas: rutas });
+}
+
+// =============================================
+// AUXILIARES - Subir foto de descarga
+// =============================================
+function handleSubirFotoDescarga(data) {
+  if (!validarCredenciales(data)) {
+    return jsonResponse({ success: false, error: 'Credenciales inválidas' });
+  }
+
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var now = new Date();
+  var fecha = Utilities.formatDate(now, 'America/Argentina/Buenos_Aires', 'dd/MM/yyyy');
+  var hora = Utilities.formatDate(now, 'America/Argentina/Buenos_Aires', 'HH:mm:ss');
+
+  // Guardar foto en Drive
+  var fotoUrl = '';
+  if (data.fotoBase64) {
+    try {
+      var folder = DriveApp.getFolderById(FOLDER_ID);
+      var base64Data = data.fotoBase64.split(',')[1] || data.fotoBase64;
+      var blob = Utilities.newBlob(
+        Utilities.base64Decode(base64Data),
+        data.fotoTipo || 'image/jpeg',
+        data.fotoNombre || 'descarga.jpg'
+      );
+
+      var fileName = 'DESCARGA_' + Utilities.formatDate(now, 'America/Argentina/Buenos_Aires', 'yyyyMMdd_HHmmss')
+        + '_' + data.auxiliar.replace(/\s/g, '')
+        + '_' + data.rutaId
+        + '.' + (data.fotoNombre ? data.fotoNombre.split('.').pop() : 'jpg');
+      blob.setName(fileName);
+
+      var file = folder.createFile(blob);
+      file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+      fotoUrl = file.getUrl();
+    } catch (err) {
+      return jsonResponse({ success: false, error: 'Error al guardar foto: ' + err.toString() });
+    }
+  }
+
+  // Guardar en hoja Descargas
+  var sheet = getOrCreateSheet(ss, 'Descargas', ['ID Ruta', 'Fecha', 'Hora', 'Auxiliar', 'Foto URL']);
+  sheet.appendRow([data.rutaId, fecha, hora, data.auxiliar, fotoUrl]);
+
+  return jsonResponse({ success: true, message: 'Foto subida correctamente', url: fotoUrl });
+}
+
+// =============================================
+// AUXILIARES - Obtener fotos de descarga
+// =============================================
+function handleGetFotosDescarga(data) {
+  if (!validarCredenciales(data)) {
+    return jsonResponse({ success: false, error: 'Credenciales inválidas' });
+  }
+
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName('Descargas');
+
+  if (!sheet) {
+    return jsonResponse({ success: true, fotos: [] });
+  }
+
+  var rows = sheet.getDataRange().getValues();
+  var fotos = [];
+
+  for (var i = 1; i < rows.length; i++) {
+    if (rows[i][0].toString() === data.rutaId) {
+      fotos.push({
+        fecha: rows[i][1],
+        hora: rows[i][2],
+        auxiliar: rows[i][3],
+        url: rows[i][4]
+      });
+    }
+  }
+
+  return jsonResponse({ success: true, fotos: fotos });
 }
 
 // =============================================

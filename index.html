@@ -517,6 +517,41 @@
       font-size: 48px;
       margin-bottom: 12px;
     }
+
+    /* Fotos de descarga */
+    .foto-descarga-item {
+      margin-bottom: 12px;
+      border-radius: 8px;
+      overflow: hidden;
+      background: #f8f9fa;
+    }
+
+    .foto-descarga-item img {
+      width: 100%;
+      max-height: 200px;
+      object-fit: cover;
+      cursor: pointer;
+    }
+
+    .foto-descarga-info {
+      padding: 8px 12px;
+      font-size: 12px;
+      color: #666;
+    }
+
+    .fotos-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .fotos-grid img {
+      width: 100%;
+      height: 120px;
+      object-fit: cover;
+      border-radius: 8px;
+      cursor: pointer;
+    }
   </style>
 </head>
 <body>
@@ -663,6 +698,12 @@
       </div>
     </div>
 
+    <!-- Fotos de descarga (visibles para el chofer) -->
+    <div id="fotosDescargaCard" class="card hidden">
+      <div class="movimientos-title">Fotos de descarga</div>
+      <div id="fotosDescargaList"></div>
+    </div>
+
     <div class="card">
       <button class="btn btn-secondary" id="btnCerrarRuta" onclick="toggleRuta()">
         Cerrar Ruta
@@ -770,6 +811,62 @@
     </button>
   </div>
 
+  <!-- ===== HOME AUXILIAR ===== -->
+  <div id="auxHomeSection" class="card hidden">
+    <div class="welcome">
+      Hola, <strong id="auxNombre"></strong>
+      <span style="display: block; font-size: 12px; color: #666; margin-top: 4px;">Auxiliar de descarga</span>
+    </div>
+
+    <h2 style="font-size: 18px; margin-bottom: 16px;">Rutas para descargar</h2>
+
+    <div id="auxRutasList"></div>
+
+    <button class="btn-logout" onclick="logout()">
+      Cerrar sesión
+    </button>
+  </div>
+
+  <!-- ===== AUXILIAR - SUBIR FOTOS DE DESCARGA ===== -->
+  <div id="auxDescargaSection" class="card hidden">
+    <button class="btn-back" onclick="showAuxHome()">← Volver</button>
+
+    <h2 style="font-size: 18px; margin-bottom: 16px;">Subir fotos de descarga</h2>
+
+    <div class="ruta-info" style="margin-bottom: 16px;">
+      <div class="ruta-info-left">
+        <span class="ruta-camion" id="auxRutaCamion">--</span>
+        <span class="ruta-fecha" id="auxRutaChess">CHESS: --</span>
+      </div>
+    </div>
+
+    <div id="auxDescargaAlert"></div>
+
+    <div class="form-group">
+      <label>Foto de productos devueltos</label>
+      <div class="foto-upload" id="auxFotoUpload">
+        <input type="file" id="auxFotoInput" accept="image/*" capture="environment" onchange="handleFotoAux(this)">
+        <div id="auxFotoPlaceholder">
+          <div class="icon">📷</div>
+          <div class="text">Tocá para sacar foto</div>
+        </div>
+        <div id="auxFotoPreview" class="hidden">
+          <img id="auxPreviewImg" class="preview-img" alt="Preview">
+          <div class="filename" id="auxFotoName"></div>
+        </div>
+      </div>
+    </div>
+
+    <button class="btn btn-primary" id="btnSubirDescarga" onclick="subirFotoDescarga()">
+      Subir Foto
+    </button>
+
+    <div class="movimientos-list" style="margin-top: 24px;">
+      <div class="movimientos-title">Fotos subidas</div>
+      <div id="auxFotosSubidas"></div>
+    </div>
+  </div>
+
 </div>
 
 <script>
@@ -791,9 +888,17 @@
   var ultimoCodVerificado = '';
   var timerExceptuado = null;
 
+  // Variables para auxiliares
+  var auxFotoData = null;
+  var auxFotoTipo = '';
+  var auxFotoNombre = '';
+  var auxRutaSeleccionada = null;
+
   // Inicializar
   if (session) {
-    if (rutaActiva) {
+    if (session.tipo === 'Auxiliar') {
+      showAuxHome();
+    } else if (rutaActiva) {
       showRutaActiva();
     } else {
       showHome();
@@ -827,9 +932,13 @@
       btn.textContent = 'Ingresar';
 
       if (data.success) {
-        session = { usuario: usuario, password: password, nombre: data.nombre };
+        session = { usuario: usuario, password: password, nombre: data.nombre, tipo: data.tipo || 'Chofer' };
         localStorage.setItem('chofer_session', JSON.stringify(session));
-        showHome();
+        if (session.tipo === 'Auxiliar') {
+          showAuxHome();
+        } else {
+          showHome();
+        }
       } else {
         showAlert('loginAlert', data.error || 'Error al ingresar', 'error');
       }
@@ -846,9 +955,11 @@
   // =============================================
   function hideAll() {
     var sections = ['loginSection', 'homeSection', 'nuevaRutaSection', 'misRutasSection',
-                    'rutaActivaSection', 'transferenciaSection', 'efectivoSection', 'ctacteSection'];
+                    'rutaActivaSection', 'transferenciaSection', 'efectivoSection', 'ctacteSection',
+                    'auxHomeSection', 'auxDescargaSection', 'fotosDescargaCard'];
     sections.forEach(function(id) {
-      document.getElementById(id).classList.add('hidden');
+      var el = document.getElementById(id);
+      if (el) el.classList.add('hidden');
     });
   }
 
@@ -876,6 +987,7 @@
     document.getElementById('rutaActivaSection').classList.remove('hidden');
     actualizarVistaRuta();
     cargarMovimientosRuta();
+    cargarFotosDescargaChofer();
   }
 
   function showAgregarMovimiento(tipo) {
@@ -1536,6 +1648,220 @@
   document.getElementById('loginUser').addEventListener('keypress', function(e) {
     if (e.key === 'Enter') document.getElementById('loginPass').focus();
   });
+
+  // =============================================
+  // AUXILIARES - Funciones
+  // =============================================
+  function showAuxHome() {
+    hideAll();
+    document.getElementById('auxHomeSection').classList.remove('hidden');
+    document.getElementById('auxNombre').textContent = session.nombre;
+    cargarRutasParaDescarga();
+  }
+
+  function cargarRutasParaDescarga() {
+    var container = document.getElementById('auxRutasList');
+    container.innerHTML = '<div class="empty-state"><span class="spinner" style="border-top-color: #4361ee; border-color: rgba(67,97,238,0.3);"></span><p>Cargando rutas...</p></div>';
+
+    fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({
+        action: 'getRutasParaDescarga',
+        usuario: session.usuario,
+        password: session.password
+      })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (data.success) {
+        renderRutasAux(data.rutas || []);
+      } else {
+        container.innerHTML = '<div class="empty-state"><p>' + (data.error || 'Error al cargar') + '</p></div>';
+      }
+    })
+    .catch(function(err) {
+      container.innerHTML = '<div class="empty-state"><p>Error de conexión</p></div>';
+    });
+  }
+
+  function renderRutasAux(rutas) {
+    var container = document.getElementById('auxRutasList');
+
+    if (rutas.length === 0) {
+      container.innerHTML = '<div class="empty-state"><div class="icon">📦</div><p>No hay rutas para descargar hoy</p></div>';
+      return;
+    }
+
+    var html = '';
+    rutas.forEach(function(r) {
+      html += '<div class="ruta-list-item" onclick=\'seleccionarRutaAux(' + JSON.stringify(r).replace(/'/g, "\\'") + ')\'>';
+      html += '<div class="ruta-list-info">';
+      html += '<span class="ruta-list-camion">' + r.camion + '</span>';
+      html += '<span class="ruta-list-fecha">CHESS: ' + (r.chess || '--') + '</span>';
+      html += '</div>';
+      html += '<span style="font-size: 24px;">📷</span>';
+      html += '</div>';
+    });
+    container.innerHTML = html;
+  }
+
+  function seleccionarRutaAux(ruta) {
+    auxRutaSeleccionada = ruta;
+    hideAll();
+    document.getElementById('auxDescargaSection').classList.remove('hidden');
+    document.getElementById('auxRutaCamion').textContent = ruta.camion;
+    document.getElementById('auxRutaChess').textContent = 'CHESS: ' + (ruta.chess || '--');
+    resetFotoAux();
+    cargarFotosDescarga(ruta.id);
+  }
+
+  function handleFotoAux(input) {
+    var file = input.files[0];
+    if (!file) return;
+
+    auxFotoTipo = file.type;
+    auxFotoNombre = file.name;
+
+    var reader = new FileReader();
+    reader.onload = function(e) {
+      auxFotoData = e.target.result;
+      document.getElementById('auxFotoPlaceholder').classList.add('hidden');
+      document.getElementById('auxFotoPreview').classList.remove('hidden');
+      document.getElementById('auxPreviewImg').src = auxFotoData;
+      document.getElementById('auxFotoName').textContent = auxFotoNombre;
+      document.getElementById('auxFotoUpload').classList.add('has-foto');
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function resetFotoAux() {
+    document.getElementById('auxFotoInput').value = '';
+    document.getElementById('auxFotoPlaceholder').classList.remove('hidden');
+    document.getElementById('auxFotoPreview').classList.add('hidden');
+    document.getElementById('auxFotoUpload').classList.remove('has-foto');
+    auxFotoData = null;
+    auxFotoTipo = '';
+    auxFotoNombre = '';
+  }
+
+  function subirFotoDescarga() {
+    if (!auxFotoData) {
+      showAlert('auxDescargaAlert', 'Sacá una foto primero', 'error');
+      return;
+    }
+
+    var btn = document.getElementById('btnSubirDescarga');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span>Subiendo...';
+
+    fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({
+        action: 'subirFotoDescarga',
+        usuario: session.usuario,
+        password: session.password,
+        auxiliar: session.nombre,
+        rutaId: auxRutaSeleccionada.id,
+        fotoBase64: auxFotoData,
+        fotoTipo: auxFotoTipo,
+        fotoNombre: auxFotoNombre
+      })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      btn.disabled = false;
+      btn.textContent = 'Subir Foto';
+
+      if (data.success) {
+        showAlert('auxDescargaAlert', 'Foto subida correctamente', 'success');
+        resetFotoAux();
+        cargarFotosDescarga(auxRutaSeleccionada.id);
+      } else {
+        showAlert('auxDescargaAlert', data.error || 'Error al subir', 'error');
+      }
+    })
+    .catch(function(err) {
+      btn.disabled = false;
+      btn.textContent = 'Subir Foto';
+      showAlert('auxDescargaAlert', 'Error de conexión', 'error');
+    });
+  }
+
+  function cargarFotosDescarga(rutaId) {
+    var container = document.getElementById('auxFotosSubidas');
+    container.innerHTML = '<div class="empty-state"><span class="spinner" style="border-top-color: #4361ee; border-color: rgba(67,97,238,0.3);"></span></div>';
+
+    fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({
+        action: 'getFotosDescarga',
+        usuario: session.usuario,
+        password: session.password,
+        rutaId: rutaId
+      })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (data.success) {
+        renderFotosDescarga(data.fotos || [], container);
+      } else {
+        container.innerHTML = '<div class="empty-state"><p>Error al cargar fotos</p></div>';
+      }
+    })
+    .catch(function(err) {
+      container.innerHTML = '<div class="empty-state"><p>Error de conexión</p></div>';
+    });
+  }
+
+  function renderFotosDescarga(fotos, container) {
+    if (fotos.length === 0) {
+      container.innerHTML = '<div class="empty-state" style="padding: 20px;"><p>No hay fotos todavía</p></div>';
+      return;
+    }
+
+    var html = '<div class="fotos-grid">';
+    fotos.forEach(function(f) {
+      html += '<img src="' + f.url + '" alt="Descarga" onclick="window.open(\'' + f.url + '\', \'_blank\')">';
+    });
+    html += '</div>';
+    container.innerHTML = html;
+  }
+
+  // =============================================
+  // CHOFER - Ver fotos de descarga en su ruta
+  // =============================================
+  function cargarFotosDescargaChofer() {
+    if (!rutaActiva) return;
+
+    var card = document.getElementById('fotosDescargaCard');
+    var container = document.getElementById('fotosDescargaList');
+
+    fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({
+        action: 'getFotosDescarga',
+        usuario: session.usuario,
+        password: session.password,
+        rutaId: rutaActiva.id
+      })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (data.success && data.fotos && data.fotos.length > 0) {
+        card.classList.remove('hidden');
+        renderFotosDescarga(data.fotos, container);
+      } else {
+        card.classList.add('hidden');
+      }
+    })
+    .catch(function(err) {
+      card.classList.add('hidden');
+    });
+  }
 </script>
 
 </body>
