@@ -6,8 +6,17 @@
 // (Extensions > Apps Script desde tu Google Sheet)
 // ============================================
 
-// ID de la carpeta de Google Drive donde se guardan las fotos
+// ID de la carpeta de Google Drive donde se guardan las fotos (backup)
 var FOLDER_ID = '1234567890'; // <-- REEMPLAZÁ CON TU ID DE CARPETA
+
+// ============================================
+// CLOUDINARY - Configuración
+// ============================================
+// Obtené estos datos de tu cuenta en cloudinary.com/console
+var CLOUDINARY_CLOUD_NAME = 'TU_CLOUD_NAME';  // <-- REEMPLAZÁ
+var CLOUDINARY_API_KEY = 'TU_API_KEY';        // <-- REEMPLAZÁ
+var CLOUDINARY_API_SECRET = 'TU_API_SECRET';  // <-- REEMPLAZÁ
+var CLOUDINARY_UPLOAD_PRESET = 'ml_default';  // Preset para unsigned uploads (o creá uno en Settings > Upload)
 
 function doPost(e) {
   try {
@@ -282,31 +291,21 @@ function handleAgregarMovimiento(data) {
   var monto = parseFloat(data.monto) || 0;
 
   if (data.tipo === 'transferencia') {
-    // Guardar foto en Drive (solo si no es exceptuado)
+    // Guardar foto en Cloudinary (solo si no es exceptuado)
     var fotoUrl = '';
     var esExceptuado = data.exceptuado === 'Sí';
 
     if (data.fotoBase64 && !esExceptuado) {
-      try {
-        var folder = DriveApp.getFolderById(FOLDER_ID);
-        var base64Data = data.fotoBase64.split(',')[1] || data.fotoBase64;
-        var blob = Utilities.newBlob(
-          Utilities.base64Decode(base64Data),
-          data.fotoTipo || 'image/jpeg',
-          data.fotoNombre || 'comprobante.jpg'
-        );
+      var fileName = Utilities.formatDate(now, 'America/Argentina/Buenos_Aires', 'yyyyMMdd_HHmmss')
+        + '_' + data.chofer.replace(/\s/g, '')
+        + '_' + data.codCliente;
 
-        var fileName = Utilities.formatDate(now, 'America/Argentina/Buenos_Aires', 'yyyyMMdd_HHmmss')
-          + '_' + data.chofer.replace(/\s/g, '')
-          + '_' + data.codCliente
-          + '.' + (data.fotoNombre ? data.fotoNombre.split('.').pop() : 'jpg');
-        blob.setName(fileName);
-
-        var file = folder.createFile(blob);
-        file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
-        fotoUrl = 'https://drive.google.com/uc?export=view&id=' + file.getId();
-      } catch (err) {
-        return jsonResponse({ success: false, error: 'Error al guardar foto: ' + err.toString() });
+      // Subir a Cloudinary
+      var cloudResult = subirACloudinary(data.fotoBase64, fileName);
+      if (cloudResult.success) {
+        fotoUrl = cloudResult.url;
+      } else {
+        return jsonResponse({ success: false, error: 'Error al guardar foto: ' + cloudResult.error });
       }
     }
 
@@ -444,29 +443,19 @@ function handleSubirFotoDescarga(data) {
   var fecha = Utilities.formatDate(now, 'America/Argentina/Buenos_Aires', 'dd/MM/yyyy');
   var hora = Utilities.formatDate(now, 'America/Argentina/Buenos_Aires', 'HH:mm:ss');
 
-  // Guardar foto en Drive
+  // Guardar foto en Cloudinary
   var fotoUrl = '';
   if (data.fotoBase64) {
-    try {
-      var folder = DriveApp.getFolderById(FOLDER_ID);
-      var base64Data = data.fotoBase64.split(',')[1] || data.fotoBase64;
-      var blob = Utilities.newBlob(
-        Utilities.base64Decode(base64Data),
-        data.fotoTipo || 'image/jpeg',
-        data.fotoNombre || 'descarga.jpg'
-      );
+    var fileName = 'DESCARGA_' + Utilities.formatDate(now, 'America/Argentina/Buenos_Aires', 'yyyyMMdd_HHmmss')
+      + '_' + data.auxiliar.replace(/\s/g, '')
+      + '_' + data.rutaId;
 
-      var fileName = 'DESCARGA_' + Utilities.formatDate(now, 'America/Argentina/Buenos_Aires', 'yyyyMMdd_HHmmss')
-        + '_' + data.auxiliar.replace(/\s/g, '')
-        + '_' + data.rutaId
-        + '.' + (data.fotoNombre ? data.fotoNombre.split('.').pop() : 'jpg');
-      blob.setName(fileName);
-
-      var file = folder.createFile(blob);
-      file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
-      fotoUrl = 'https://drive.google.com/uc?export=view&id=' + file.getId();
-    } catch (err) {
-      return jsonResponse({ success: false, error: 'Error al guardar foto: ' + err.toString() });
+    // Subir a Cloudinary
+    var cloudResult = subirACloudinary(data.fotoBase64, fileName);
+    if (cloudResult.success) {
+      fotoUrl = cloudResult.url;
+    } else {
+      return jsonResponse({ success: false, error: 'Error al guardar foto: ' + cloudResult.error });
     }
   }
 
@@ -507,6 +496,53 @@ function handleGetFotosDescarga(data) {
   }
 
   return jsonResponse({ success: true, fotos: fotos });
+}
+
+// =============================================
+// CLOUDINARY - Subir imagen
+// =============================================
+function subirACloudinary(base64Data, fileName) {
+  try {
+    // Limpiar el base64 si tiene el prefijo data:image
+    var cleanBase64 = base64Data.split(',')[1] || base64Data;
+
+    // Crear la URL de upload
+    var uploadUrl = 'https://api.cloudinary.com/v1_1/' + CLOUDINARY_CLOUD_NAME + '/image/upload';
+
+    // Preparar los datos para upload (unsigned)
+    var payload = {
+      'file': 'data:image/jpeg;base64,' + cleanBase64,
+      'upload_preset': CLOUDINARY_UPLOAD_PRESET,
+      'public_id': fileName.replace(/\.[^/.]+$/, ''), // sin extensión
+      'folder': 'chatbot-choferes'
+    };
+
+    var options = {
+      'method': 'post',
+      'payload': payload,
+      'muteHttpExceptions': true
+    };
+
+    var response = UrlFetchApp.fetch(uploadUrl, options);
+    var result = JSON.parse(response.getContentText());
+
+    if (result.secure_url) {
+      return {
+        success: true,
+        url: result.secure_url
+      };
+    } else {
+      return {
+        success: false,
+        error: result.error ? result.error.message : 'Error desconocido'
+      };
+    }
+  } catch (err) {
+    return {
+      success: false,
+      error: err.toString()
+    };
+  }
 }
 
 // =============================================
@@ -606,27 +642,17 @@ function handleSubmitLegacy(data) {
 
   var fotoUrl = '';
   if (data.fotoBase64) {
-    try {
-      var folder = DriveApp.getFolderById(FOLDER_ID);
-      var base64Data = data.fotoBase64.split(',')[1] || data.fotoBase64;
-      var blob = Utilities.newBlob(
-        Utilities.base64Decode(base64Data),
-        data.fotoTipo || 'image/jpeg',
-        data.fotoNombre || 'comprobante.jpg'
-      );
+    var now = new Date();
+    var fileName = Utilities.formatDate(now, 'America/Argentina/Buenos_Aires', 'yyyyMMdd_HHmmss')
+      + '_' + data.chofer.replace(/\s/g, '')
+      + '_' + data.codCliente;
 
-      var now = new Date();
-      var fileName = Utilities.formatDate(now, 'America/Argentina/Buenos_Aires', 'yyyyMMdd_HHmmss')
-        + '_' + data.chofer.replace(/\s/g, '')
-        + '_' + data.codCliente
-        + '.' + (data.fotoNombre ? data.fotoNombre.split('.').pop() : 'jpg');
-      blob.setName(fileName);
-
-      var file = folder.createFile(blob);
-      file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
-      fotoUrl = 'https://drive.google.com/uc?export=view&id=' + file.getId();
-    } catch (err) {
-      return jsonResponse({ success: false, error: 'Error al guardar foto: ' + err.toString() });
+    // Subir a Cloudinary
+    var cloudResult = subirACloudinary(data.fotoBase64, fileName);
+    if (cloudResult.success) {
+      fotoUrl = cloudResult.url;
+    } else {
+      return jsonResponse({ success: false, error: 'Error al guardar foto: ' + cloudResult.error });
     }
   }
 
